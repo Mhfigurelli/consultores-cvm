@@ -40,6 +40,7 @@ def listar_consultores():
     situacao = request.args.get('situacao', '')
     pesquisado = request.args.get('pesquisado', '')
     potencial = request.args.get('potencial', '')
+    tem_empresa = request.args.get('tem_empresa', '')
     busca = request.args.get('busca', '')
 
     # Query base
@@ -60,6 +61,11 @@ def listar_consultores():
         query = query.eq('potencial', 'nao')
     elif potencial == 'indefinido':
         query = query.is_('potencial', 'null')
+
+    if tem_empresa == 'sim':
+        query = query.eq('tem_empresa', True)
+    elif tem_empresa == 'nao':
+        query = query.eq('tem_empresa', False)
 
     if busca:
         query = query.ilike('nome', f'%{busca}%')
@@ -123,10 +129,14 @@ def estatisticas():
     # Potenciais SIM
     potenciais = supabase.table('consultores_pf').select('id', count='exact').eq('potencial', 'sim').execute()
 
+    # Sem empresa
+    sem_empresa = supabase.table('consultores_pf').select('id', count='exact').eq('tem_empresa', False).execute()
+
     return jsonify({
         'total': total.count,
         'pesquisados': pesquisados.count,
-        'potenciais': potenciais.count
+        'potenciais': potenciais.count,
+        'sem_empresa': sem_empresa.count
     })
 
 

@@ -147,6 +147,9 @@
             <div class="stat-item warning">
                 Pesquisados: <span id="pesquisadoCount">-</span>
             </div>
+            <div class="stat-item" style="background:#17a2b8;color:white;">
+                Sem empresa: <span id="semEmpresaCount">-</span>
+            </div>
         </div>
 
         <div class="search-box">
@@ -167,6 +170,11 @@
                     <option value="sim">Potencial SIM</option>
                     <option value="nao">Potencial NAO</option>
                     <option value="indefinido">Nao avaliados</option>
+                </select>
+                <select id="temEmpresaFilter" onchange="carregarConsultores()">
+                    <option value="">Todos (empresa)</option>
+                    <option value="sim">Com empresa</option>
+                    <option value="nao">Sem empresa</option>
                 </select>
                 <button onclick="exportarCSV()" class="btn-success">Exportar CSV</button>
                 <button onclick="exportarPotenciais()" class="btn-success">Exportar Potenciais</button>
@@ -235,12 +243,14 @@
             const situacao = document.getElementById('situacaoFilter').value;
             const pesquisado = document.getElementById('pesquisadoFilter').value;
             const potencial = document.getElementById('potencialFilter').value;
+            const temEmpresa = document.getElementById('temEmpresaFilter').value;
             const busca = document.getElementById('searchInput').value;
 
             const params = new URLSearchParams();
             if (situacao) params.append('situacao', situacao);
             if (pesquisado) params.append('pesquisado', pesquisado);
             if (potencial) params.append('potencial', potencial);
+            if (temEmpresa) params.append('tem_empresa', temEmpresa);
             if (busca) params.append('busca', busca);
 
             const tbody = document.getElementById('tableBody');
@@ -337,6 +347,7 @@
                 document.getElementById('totalCount').textContent = stats.total;
                 document.getElementById('pesquisadoCount').textContent = stats.pesquisados;
                 document.getElementById('potencialCount').textContent = stats.potenciais;
+                document.getElementById('semEmpresaCount').textContent = stats.sem_empresa;
             } catch (error) {
                 console.error('Erro ao carregar stats:', error);
             }
