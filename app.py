@@ -42,6 +42,9 @@ def listar_consultores():
     potencial = request.args.get('potencial', '')
     tem_empresa = request.args.get('tem_empresa', '')
     busca = request.args.get('busca', '')
+    eh_rs = request.args.get('eh_rs', '')
+    eh_poa_metro = request.args.get('eh_poa_metro', '')
+    tem_consultoria_rs = request.args.get('tem_consultoria_rs', '')
 
     # Query base
     query = supabase.table('consultores_pf').select('*')
@@ -66,6 +69,18 @@ def listar_consultores():
         query = query.eq('tem_empresa', True)
     elif tem_empresa == 'nao':
         query = query.eq('tem_empresa', False)
+
+    # Filtros de localização RS
+    if eh_rs == 'sim':
+        query = query.eq('eh_rs', True)
+    elif eh_rs == 'nao':
+        query = query.eq('eh_rs', False)
+
+    if eh_poa_metro == 'sim':
+        query = query.eq('eh_poa_metro', True)
+
+    if tem_consultoria_rs == 'sim':
+        query = query.eq('tem_consultoria_rs', True)
 
     if busca:
         query = query.ilike('nome', f'%{busca}%')
@@ -132,11 +147,23 @@ def estatisticas():
     # Sem empresa
     sem_empresa = supabase.table('consultores_pf').select('id', count='exact').eq('tem_empresa', False).execute()
 
+    # RS
+    rs_total = supabase.table('consultores_pf').select('id', count='exact').eq('eh_rs', True).execute()
+
+    # POA/Metro
+    poa_metro = supabase.table('consultores_pf').select('id', count='exact').eq('eh_poa_metro', True).execute()
+
+    # Com consultoria RS
+    consultoria_rs = supabase.table('consultores_pf').select('id', count='exact').eq('tem_consultoria_rs', True).execute()
+
     return jsonify({
         'total': total.count,
         'pesquisados': pesquisados.count,
         'potenciais': potenciais.count,
-        'sem_empresa': sem_empresa.count
+        'sem_empresa': sem_empresa.count,
+        'rs_total': rs_total.count if rs_total.count else 0,
+        'poa_metro': poa_metro.count if poa_metro.count else 0,
+        'consultoria_rs': consultoria_rs.count if consultoria_rs.count else 0
     })
 
 

@@ -69,6 +69,24 @@
         }
         .status-ativo { background: #d4edda; color: #155724; }
         .status-outro { background: #fff3cd; color: #856404; }
+
+        .badge-poa {
+            background: #e83e8c; color: white;
+            padding: 2px 6px; border-radius: 10px; font-size: 10px;
+            display: inline-block;
+        }
+        .badge-rs {
+            background: #6f42c1; color: white;
+            padding: 2px 6px; border-radius: 10px; font-size: 10px;
+            display: inline-block;
+        }
+        .badge-consultoria {
+            background: #fd7e14; color: white;
+            padding: 2px 4px; border-radius: 8px; font-size: 9px;
+            display: inline-block; margin-left: 2px;
+        }
+        tr.eh-poa { background: #fdf2f8; }
+        tr.eh-rs { background: #f5f3ff; }
         .hidden { display: none; }
         .count { font-weight: bold; color: #007bff; }
 
@@ -150,6 +168,15 @@
             <div class="stat-item" style="background:#17a2b8;color:white;">
                 Sem empresa: <span id="semEmpresaCount">-</span>
             </div>
+            <div class="stat-item" style="background:#6f42c1;color:white;">
+                RS: <span id="rsCount">-</span>
+            </div>
+            <div class="stat-item" style="background:#e83e8c;color:white;">
+                POA/Metro: <span id="poaCount">-</span>
+            </div>
+            <div class="stat-item" style="background:#fd7e14;color:white;">
+                Consultoria RS: <span id="consultoriaRsCount">-</span>
+            </div>
         </div>
 
         <div class="search-box">
@@ -176,6 +203,19 @@
                     <option value="sim">Com empresa</option>
                     <option value="nao">Sem empresa</option>
                 </select>
+                <select id="rsFilter" onchange="carregarConsultores()">
+                    <option value="">Todos (UF)</option>
+                    <option value="sim">Somente RS</option>
+                    <option value="nao">Fora do RS</option>
+                </select>
+                <select id="poaFilter" onchange="carregarConsultores()">
+                    <option value="">Todos (POA)</option>
+                    <option value="sim">POA/Metro</option>
+                </select>
+                <select id="consultoriaRsFilter" onchange="carregarConsultores()">
+                    <option value="">Todos (consultoria)</option>
+                    <option value="sim">Com consultoria RS</option>
+                </select>
                 <button onclick="exportarCSV()" class="btn-success">Exportar CSV</button>
                 <button onclick="exportarPotenciais()" class="btn-success">Exportar Potenciais</button>
                 <button onclick="carregarConsultores()" style="background:#007bff;color:white;">Atualizar</button>
@@ -188,6 +228,7 @@
                     <th>#</th>
                     <th class="col-check">Pesquisado</th>
                     <th>Nome</th>
+                    <th>Localizacao</th>
                     <th>Registro CVM</th>
                     <th>Situacao</th>
                     <th>Buscar em</th>
@@ -197,7 +238,7 @@
             </thead>
             <tbody id="tableBody">
                 <tr>
-                    <td colspan="8" class="loading">Carregando consultores...</td>
+                    <td colspan="9" class="loading">Carregando consultores...</td>
                 </tr>
             </tbody>
         </table>
@@ -244,6 +285,9 @@
             const pesquisado = document.getElementById('pesquisadoFilter').value;
             const potencial = document.getElementById('potencialFilter').value;
             const temEmpresa = document.getElementById('temEmpresaFilter').value;
+            const ehRs = document.getElementById('rsFilter').value;
+            const ehPoa = document.getElementById('poaFilter').value;
+            const consultoriaRs = document.getElementById('consultoriaRsFilter').value;
             const busca = document.getElementById('searchInput').value;
 
             const params = new URLSearchParams();
@@ -251,10 +295,13 @@
             if (pesquisado) params.append('pesquisado', pesquisado);
             if (potencial) params.append('potencial', potencial);
             if (temEmpresa) params.append('tem_empresa', temEmpresa);
+            if (ehRs) params.append('eh_rs', ehRs);
+            if (ehPoa) params.append('eh_poa_metro', ehPoa);
+            if (consultoriaRs) params.append('tem_consultoria_rs', consultoriaRs);
             if (busca) params.append('busca', busca);
 
             const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '<tr><td colspan="8" class="loading">Carregando...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="loading">Carregando...</td></tr>';
 
             try {
                 const response = await fetch(`/api/consultores?${params}`);
@@ -286,7 +333,7 @@
             document.getElementById('visibleCount').textContent = filtrados.length;
 
             if (filtrados.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;">Nenhum consultor encontrado</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;">Nenhum consultor encontrado</td></tr>';
                 return;
             }
 
@@ -307,6 +354,16 @@
                     linksHtml += `<a href="${siteUrl}" target="_blank" class="link-site">Site</a>`;
                 }
 
+                // Montar info de localização
+                let locHtml = '-';
+                if (c.eh_poa_metro) {
+                    locHtml = `<span class="badge-poa">${c.municipio_rs || 'POA/Metro'}</span>`;
+                    if (c.tem_consultoria_rs) locHtml += ' <span class="badge-consultoria">Consult</span>';
+                } else if (c.eh_rs) {
+                    locHtml = `<span class="badge-rs">${c.municipio_rs || 'RS'}</span>`;
+                    if (c.tem_consultoria_rs) locHtml += ' <span class="badge-consultoria">Consult</span>';
+                }
+
                 return `
                     <tr class="${rowClass.join(' ')}" data-id="${c.id}">
                         <td>${idx + 1}</td>
@@ -316,6 +373,7 @@
                                    onchange="togglePesquisado(${c.id}, this.checked)">
                         </td>
                         <td><strong>${c.nome}</strong></td>
+                        <td>${locHtml}</td>
                         <td>${c.dt_reg || ''}</td>
                         <td><span class="status-cvm ${statusClass}">${c.situacao.substring(0, 15)}...</span></td>
                         <td class="links">${linksHtml}</td>
@@ -348,6 +406,9 @@
                 document.getElementById('pesquisadoCount').textContent = stats.pesquisados;
                 document.getElementById('potencialCount').textContent = stats.potenciais;
                 document.getElementById('semEmpresaCount').textContent = stats.sem_empresa;
+                document.getElementById('rsCount').textContent = stats.rs_total || 0;
+                document.getElementById('poaCount').textContent = stats.poa_metro || 0;
+                document.getElementById('consultoriaRsCount').textContent = stats.consultoria_rs || 0;
             } catch (error) {
                 console.error('Erro ao carregar stats:', error);
             }
